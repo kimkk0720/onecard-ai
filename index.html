@@ -378,6 +378,7 @@
     let oneCardTimer = null;
     let isProcessingTurn = false;
     let currentEffectiveSuit = null; // 'ANY' 또는 문양
+    let attackStack = 0; // 공격 누적 매수
 
     // DOM
     const discardEl = document.getElementById('discard-pile');
@@ -390,6 +391,7 @@
     const cpuVisuals = [null, document.querySelector('#cpu1 .cpu-hand-visual'), document.querySelector('#cpu2 .cpu-hand-visual'), document.querySelector('#cpu3 .cpu-hand-visual')];
 
     function initGame() {
+        attackStack = 0; // 초기화
         createDeck();
         shuffleDeck();
         dealCards();
@@ -454,6 +456,38 @@
 
     // ----- 판정 로직 (수정됨) -----
     function isValidMove(card, topCard) {
+        // 공격 상태일 때 방어 로직
+        if (attackStack > 0) {
+            // 조커는 언제나 방어 가능
+            if (card.isJoker) return true;
+
+            // 2 공격 방어: 2, 같은 무늬 A, 조커
+            if (topCard.rank === '2') {
+                if (card.rank === '2') return true;
+                if (card.rank === 'A' && card.suit === currentEffectiveSuit) return true;
+                return false;
+            }
+
+            // A 공격 방어: A, 조커
+            if (topCard.rank === 'A') {
+                if (card.rank === 'A') return true;
+                return false;
+            }
+
+            // 조커 공격 방어: 색상이 같은 A, 조커
+            if (topCard.isJoker) {
+                if (card.rank === 'A') {
+                    // 조커 색상 판별 (Black/Color)
+                    const jokerIsRed = topCard.rank === 'Color';
+                    const cardIsRed = ['♥', '♦'].includes(card.suit);
+                    return jokerIsRed === cardIsRed;
+                }
+                return false;
+            }
+
+            return false;
+        }
+
         // 내려는 카드가 조커면 무조건 가능
         if (card.isJoker) return true;
 
@@ -464,6 +498,13 @@
         
         // 일반적인 경우: 숫자가 같거나, 지정된 무늬와 같아야 함
         return card.rank === topCard.rank || card.suit === currentEffectiveSuit;
+    }
+
+    function getAttackValue(card) {
+        if (card.isJoker) return 5;
+        if (card.rank === 'A') return 3;
+        if (card.rank === '2') return 2;
+        return 0;
     }
 
     // ----- 원카드 버튼 로직 -----
@@ -516,7 +557,7 @@
                 updateUI();
                 callback();
             }
-        }, 900);
+        }, 700);
     }
 
     // ----- 턴 및 특수 효과 로직 -----
@@ -625,7 +666,14 @@
             
             players[0].hand.splice(cardIndex, 1);
             discardPile.push(card);
-            
+
+            // 공격치 누적
+            const attackVal = getAttackValue(card);
+            if (attackVal > 0) {
+                attackStack += attackVal;
+                log(`공격 추가! (+${attackVal}장) -> 누적 ${attackStack}장`);
+            }
+
             // 무늬 상태 업데이트
             if (card.isJoker) {
                 currentEffectiveSuit = 'ANY'; // 조커 내면 다음은 아무거나
@@ -663,6 +711,19 @@
 
     function playerDraw() {
         if (currentPlayerIndex !== 0 || isProcessingTurn) return;
+
+        if (attackStack > 0) {
+            log(`방어 실패! ${attackStack}장을 뽑습니다.`);
+            playSound('draw');
+            for (let i = 0; i < attackStack; i++) {
+                drawCardFromDeck(players[0]);
+            }
+            attackStack = 0;
+            updateUI();
+            nextTurn();
+            return;
+        }
+
         drawCardFromDeck(players[0]);
         updateUI();
         nextTurn();
@@ -680,6 +741,13 @@
         if (validIndex !== -1) {
             const card = cpu.hand.splice(validIndex, 1)[0];
             discardPile.push(card);
+
+            // 공격치 누적
+            const attackVal = getAttackValue(card);
+            if (attackVal > 0) {
+                attackStack += attackVal;
+                log(`${cpu.name} 공격! (+${attackVal}장) -> 누적 ${attackStack}장`);
+            }
 
             // 무늬 상태 업데이트
             if (card.isJoker) {
@@ -710,8 +778,17 @@
             });
 
         } else {
-            drawCardFromDeck(cpu);
-            log(`${cpu.name} 드로우`);
+            if (attackStack > 0) {
+                log(`${cpu.name} 방어 실패! ${attackStack}장을 뽑습니다.`);
+                playSound('draw');
+                for (let i = 0; i < attackStack; i++) {
+                    drawCardFromDeck(cpu);
+                }
+                attackStack = 0;
+            } else {
+                drawCardFromDeck(cpu);
+                log(`${cpu.name} 드로우`);
+            }
             updateUI();
             nextTurn();
         }
