@@ -3,35 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>원카드 프로 (배지 버그 수정판)</title>
+    <title>원카드 프로 (모바일 레이아웃 고정)</title>
     <style>
+        /* 변수 선언 */
+        :root {
+            --card-width: 60px;
+            --card-height: 90px;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #2e7d32;
             color: white;
             margin: 0;
-            overflow: hidden;
+            overflow: hidden; /* 스크롤 절대 방지 */
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: 100dvh;
+            height: 100dvh; /* 모바일 주소창 대응 */
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
         }
 
-        #confetti-canvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 10000;
-        }
-
         #game-board {
             flex: 1;
+            width: 100%;
+            height: 100%;
             position: relative;
             display: grid;
-            grid-template-rows: 1fr 2fr 1fr;
-            grid-template-columns: 1fr 2fr 1fr;
-            padding: 10px;
+            /* 행 높이 고정: 상단(20%) 중앙(나머지) 하단(140px 고정) */
+            grid-template-rows: 20% 1fr 140px;
+            grid-template-columns: 80px 1fr 80px; /* 좌우 CPU 영역 고정 */
+            padding: 5px;
+            box-sizing: border-box;
         }
 
         .player-area {
@@ -40,8 +45,7 @@
             align-items: center;
             flex-direction: column;
             position: relative;
-            padding: 5px;
-            transition: opacity 0.3s;
+            overflow: visible; /* 카드가 살짝 튀어나와도 보이게 */
         }
 
         .active-turn {
@@ -50,10 +54,15 @@
             box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
         }
 
-        #cpu2 { grid-area: 1 / 2 / 2 / 3; }
-        #cpu1 { grid-area: 2 / 1 / 3 / 2; }
-        #cpu3 { grid-area: 2 / 3 / 3 / 4; }
-        #player { grid-area: 3 / 2 / 4 / 3; }
+        /* 그리드 영역 할당 */
+        #cpu2 { grid-area: 1 / 2 / 2 / 3; } /* 상단 */
+        #cpu1 { grid-area: 2 / 1 / 3 / 2; } /* 좌측 */
+        #cpu3 { grid-area: 2 / 3 / 3 / 4; } /* 우측 */
+        #player {
+            grid-area: 3 / 1 / 4 / 4; /* 하단 전체 사용 */
+            justify-content: flex-start; /* 위쪽 정렬 */
+            padding-top: 10px;
+        }
 
         #center-area {
             grid-area: 2 / 2 / 3 / 3;
@@ -61,73 +70,31 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
         #cards-zone {
             display: flex;
-            gap: 30px;
+            gap: 20px;
             align-items: center;
             position: relative;
         }
 
-        /* [수정됨] 덱 우측 상단 배지 */
-        #draw-penalty-badge {
-            position: absolute;
-            top: -15px;
-            right: -15px;
-            width: 35px;
-            height: 35px;
-            background-color: #d32f2f;
-            color: white;
-            border-radius: 50%;
-            border: 3px solid white;
-
-            /* 중요: !important 제거하고 기본을 none으로 설정 */
-            display: none;
-            justify-content: center;
-            align-items: center;
-
-            font-weight: 900;
-            font-size: 18px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-            z-index: 100;
-            animation: popBadge 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popBadge {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-
-        #current-suit-indicator {
-            font-size: 18px;
-            font-weight: bold;
-            background: rgba(0,0,0,0.6);
-            padding: 5px 15px;
-            border-radius: 20px;
-            color: #fff;
-            min-height: 27px;
+        /* 플레이어 손패 영역 (가장 중요: 높이 고정) */
+        #player-hand {
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-        .suit-icon { font-size: 24px; }
-        .red-suit { color: #ff5252; }
-        .black-suit { color: #fff; }
-        .any-suit { color: #ffeb3b; text-shadow: 0 0 5px orange; }
-
-        .player-name {
-            background: rgba(0,0,0,0.5);
-            padding: 2px 10px;
-            border-radius: 10px;
-            margin-bottom: 5px;
-            font-size: 14px;
-            font-weight: bold;
+            justify-content: center;
+            height: 110px; /* 카드(90) + 호버공간(20) */
+            width: 95%;    /* 화면 꽉 차게 */
+            margin-top: 5px;
+            perspective: 1000px;
         }
 
+        /* 카드 스타일 */
         .card {
-            width: 60px; height: 90px;
+            width: var(--card-width);
+            height: var(--card-height);
             background-color: white;
             border-radius: 6px;
             display: flex;
@@ -138,19 +105,14 @@
             box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
             cursor: pointer;
             position: relative;
-            transition: transform 0.2s;
+            transition: transform 0.2s, margin 0.2s; /* 부드러운 움직임 */
+            flex-shrink: 0; /* 공간 좁아도 카드 크기 줄어들지 않음 */
         }
+
         .card.red { color: #d32f2f; }
         .card.black { color: #212121; }
         .card.joker-black { color: black; border: 2px solid #555; }
         .card.joker-color { color: red; border: 2px solid #ff9800; }
-
-        .diagonal-text {
-            transform: rotate(-45deg);
-            font-size: 15px;
-            font-weight: 900;
-            letter-spacing: 0px;
-        }
 
         .card-back {
             background-color: #1a237e;
@@ -159,84 +121,108 @@
             color: transparent;
         }
 
-        #deck {
-            position: relative;
-            overflow: visible;
-        }
-        #deck:active { transform: scale(0.95); }
+        /* 내 카드는 호버 시 위로 올라옴 */
+        #player-hand .card:active { transform: translateY(-15px) scale(1.1); z-index: 100 !important; }
 
+        /* 기타 UI 요소들 */
+        #draw-penalty-badge {
+            position: absolute; top: -15px; right: -15px;
+            width: 35px; height: 35px;
+            background-color: #d32f2f; color: white;
+            border-radius: 50%; border: 3px solid white;
+            display: none; justify-content: center; align-items: center;
+            font-weight: 900; font-size: 18px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 100;
+            animation: popBadge 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popBadge { 0% {transform:scale(0);} 100% {transform:scale(1);} }
+
+        .diagonal-text { transform: rotate(-45deg); font-size: 15px; font-weight: 900; }
+
+        #current-suit-indicator {
+            font-size: 16px; font-weight: bold;
+            background: rgba(0,0,0,0.6); padding: 5px 15px;
+            border-radius: 20px; color: #fff; min-height: 27px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .suit-icon { font-size: 20px; }
+        .red-suit { color: #ff5252; }
+        .black-suit { color: #fff; }
+        .any-suit { color: #ffeb3b; text-shadow: 0 0 5px orange; }
+
+        .player-name {
+            background: rgba(0,0,0,0.5); padding: 2px 8px;
+            border-radius: 10px; margin-bottom: 5px;
+            font-size: 12px; font-weight: bold;
+        }
+
+        /* CPU 손패 */
         .cpu-hand-visual {
-            display: flex; justify-content: center; align-items: center; height: 100px;
+            display: flex; justify-content: center; align-items: center;
+            height: 80px; width: 80px;
         }
         .cpu-card {
-            width: 40px; height: 60px;
-            border-radius: 4px;
-            box-shadow: -1px 0 3px rgba(0,0,0,0.3);
-            margin-left: -25px;
-            transition: all 0.3s ease;
+            width: 30px; height: 45px; /* CPU 카드는 작게 */
+            border-radius: 3px; box-shadow: -1px 0 2px rgba(0,0,0,0.3);
+            margin-left: -20px; transition: all 0.3s ease;
         }
         .cpu-card:first-child { margin-left: 0; }
 
-        #cpu1 .cpu-hand-visual, #cpu3 .cpu-hand-visual {
-            flex-direction: column; width: 100px; height: auto;
-        }
+        /* CPU 좌우는 세로로 */
+        #cpu1 .cpu-hand-visual, #cpu3 .cpu-hand-visual { flex-direction: column; height: 100%; }
         #cpu1 .cpu-card, #cpu3 .cpu-card {
-            margin-left: 0; margin-top: -45px; transform: rotate(90deg);
+            margin-left: 0; margin-top: -35px; transform: rotate(90deg);
         }
         #cpu1 .cpu-card:first-child, #cpu3 .cpu-card:first-child { margin-top: 0; }
 
-        #player-hand { display: flex; gap: -5px; margin-top: 5px; }
-        #player-hand .card { margin: 0 3px; }
-        #player-hand .card:hover { transform: translateY(-15px) scale(1.1); z-index: 10; }
+        /* 덱 클릭 */
+        #deck { position: relative; overflow: visible; }
+        #deck:active { transform: scale(0.95); }
+
+        /* 버튼 및 캔버스 */
+        #confetti-canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10000; }
 
         #one-card-btn {
-            position: absolute;
-            width: 100px; height: 100px;
+            position: absolute; width: 90px; height: 90px;
             background: radial-gradient(circle, #ffeb3b 0%, #fbc02d 100%);
-            color: #d32f2f; font-size: 20px; font-weight: 900;
-            border: 5px solid #d32f2f; border-radius: 50%;
+            color: #d32f2f; font-size: 18px; font-weight: 900;
+            border: 4px solid #d32f2f; border-radius: 50%;
             cursor: pointer; z-index: 9999; display: none;
-            box-shadow: 0 0 30px #ffeb3b;
-            animation: pulse 0.5s infinite;
-            text-align: center; line-height: 90px;
+            box-shadow: 0 0 20px #ffeb3b; animation: pulse 0.5s infinite;
+            text-align: center; line-height: 82px;
         }
-        #one-card-btn:active { transform: scale(0.9); }
         @keyframes pulse { 0% {transform:scale(1);} 50% {transform:scale(1.1);} 100% {transform:scale(1);} }
 
-        #game-log {
-            position: absolute; bottom: 10px; left: 10px;
-            width: 220px; height: 150px;
-            background: rgba(0,0,0,0.6); color: #ddd;
-            overflow-y: auto; font-size: 11px; padding: 8px;
-            border-radius: 5px; pointer-events: none;
-            z-index: 50;
-        }
-        #game-log::-webkit-scrollbar { display: none; }
-
         #restart-btn {
-            position: absolute; top: 20px; right: 20px;
-            padding: 10px 20px; background-color: #0288d1;
+            position: absolute; top: 10px; right: 10px;
+            padding: 8px 15px; background-color: #0288d1;
             color: white; border: none; border-radius: 5px;
-            font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            display: none; z-index: 10001;
+            font-size: 14px; font-weight: bold; z-index: 10001; display: none;
         }
-        #restart-btn:hover { background-color: #03a9f4; }
+
+        #game-log {
+            position: absolute; bottom: 150px; /* 핸드 바로 위 */
+            left: 50%; transform: translateX(-50%);
+            width: 80%; height: 30px;
+            background: rgba(0,0,0,0.7); color: #fff;
+            border-radius: 15px; pointer-events: none;
+            z-index: 50;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 13px; padding: 0 10px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
 
         #suit-modal {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: none; justify-content: center; align-items: center;
-            z-index: 20000; flex-direction: column;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none;
+            justify-content: center; align-items: center; flex-direction: column;
+            z-index: 20000;
         }
-        .suit-options { display: flex; gap: 20px; margin-top: 20px; }
+        .suit-options { display: flex; gap: 15px; margin-top: 20px; }
         .suit-btn {
-            width: 80px; height: 80px;
-            font-size: 40px; background: white;
-            border: none; border-radius: 10px; cursor: pointer;
+            width: 60px; height: 60px; font-size: 30px;
+            background: white; border: none; border-radius: 10px;
         }
-        .suit-btn:hover { transform: scale(1.1); background: #eee; }
     </style>
 </head>
 <body>
@@ -245,7 +231,7 @@
 <button id="restart-btn" onclick="location.reload()">🔄 다시하기</button>
 
 <div id="suit-modal">
-    <h2 style="color:white;">변경할 무늬를 선택하세요!</h2>
+    <h2 style="color:white;">무늬 선택</h2>
     <div class="suit-options">
         <button class="suit-btn" onclick="resolveSuitSelection('♠')" style="color:black">♠</button>
         <button class="suit-btn" onclick="resolveSuitSelection('♦')" style="color:red">♦</button>
@@ -263,6 +249,7 @@
         <div class="player-name">CPU 1</div>
         <div class="cpu-hand-visual"></div>
     </div>
+
     <div id="center-area">
         <div id="current-suit-indicator"></div>
         <div id="cards-zone">
@@ -273,10 +260,12 @@
             <div id="discard-pile" class="card"></div>
         </div>
     </div>
+
     <div id="cpu3" class="player-area">
         <div class="player-name">CPU 3</div>
         <div class="cpu-hand-visual"></div>
     </div>
+
     <div id="player" class="player-area">
         <div class="player-name">YOU</div>
         <div id="player-hand"></div>
@@ -284,9 +273,12 @@
 </div>
 
 <div id="one-card-btn">원카드!</div>
-<div id="game-log"></div>
+<div id="game-log">게임 시작!</div>
 
 <script>
+    /* ==============================
+       1. 화면 높이 고정 (모바일 필수)
+       ============================== */
     function setScreenHeight() {
         let vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -295,566 +287,400 @@
     window.addEventListener('resize', setScreenHeight);
     setScreenHeight();
 
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContext();
-
+    /* ==============================
+       2. 오디오 시스템
+       ============================== */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
         const now = audioCtx.currentTime;
 
-        if (type === 'play') {
-            osc.frequency.setValueAtTime(800, now);
-            osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-            gainNode.gain.setValueAtTime(0.5, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            osc.start(now); osc.stop(now + 0.1);
-        } else if (type === 'attack') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(400, now);
-            osc.frequency.linearRampToValueAtTime(150, now + 0.3);
-            gainNode.gain.setValueAtTime(0.3, now);
-            gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
-            osc.start(now); osc.stop(now + 0.3);
-        } else if (type === 'draw') {
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(200, now);
-            osc.frequency.linearRampToValueAtTime(400, now + 0.15);
-            gainNode.gain.setValueAtTime(0.3, now);
-            gainNode.gain.linearRampToValueAtTime(0.01, now + 0.15);
-            osc.start(now); osc.stop(now + 0.15);
-        } else if (type === 'alert') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(600, now);
-            osc.frequency.setValueAtTime(800, now + 0.1);
-            gainNode.gain.setValueAtTime(0.1, now);
-            gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-            osc.start(now); osc.stop(now + 0.3);
-        } else if (type === 'special') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(400, now);
-            osc.frequency.linearRampToValueAtTime(1200, now + 0.3);
-            gainNode.gain.setValueAtTime(0.1, now);
-            gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-            osc.start(now); osc.stop(now + 0.3);
+        if(type==='play') {
+            osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1);
+            gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.1);
+            osc.start(now); osc.stop(now+0.1);
+        } else if(type==='draw') {
+            osc.type='triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(500, now+0.1);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now+0.1);
+            osc.start(now); osc.stop(now+0.1);
+        } else if(type==='attack') {
+            osc.type='sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(100, now+0.2);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now+0.2);
+            osc.start(now); osc.stop(now+0.2);
+        } else if(type==='alert') {
+            osc.type='square'; osc.frequency.setValueAtTime(700, now);
+            gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+            osc.start(now); osc.stop(now+0.3);
+        } else if(type==='special') {
+            osc.type='sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now+0.3);
+            gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+            osc.start(now); osc.stop(now+0.3);
         }
     }
 
     function playFanfare() {
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        let time = audioCtx.currentTime;
-        notes.forEach((freq, i) => {
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
-            osc.type = 'triangle'; osc.frequency.value = freq;
-            const duration = (i === notes.length - 1) ? 0.8 : 0.2;
-            gainNode.gain.setValueAtTime(0.3, time);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, time + duration);
-            osc.start(time); osc.stop(time + duration);
-            time += 0.15;
+        [523, 659, 783, 1046].forEach((f,i)=>{
+            const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.type='triangle'; o.frequency.value=f;
+            g.gain.setValueAtTime(0.2, audioCtx.currentTime + i*0.15);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i*0.15 + 0.5);
+            o.start(audioCtx.currentTime + i*0.15); o.stop(audioCtx.currentTime + i*0.15 + 0.5);
         });
-    }
-
-    const canvas = document.getElementById('confetti-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    let animationId = null;
-    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-    function createConfetti() {
-        for (let i = 0; i < 150; i++) {
-            particles.push({
-                x: window.innerWidth / 2, y: window.innerHeight / 2,
-                vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15 - 5,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                size: Math.random() * 8 + 4, gravity: 0.2, drag: 0.96
-            });
-        }
-        animateConfetti();
-    }
-    function animateConfetti() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach((p, i) => {
-            p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.vx *= p.drag; p.vy *= p.drag;
-            ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
-            if (p.y > canvas.height) particles.splice(i, 1);
-        });
-        if (particles.length > 0) animationId = requestAnimationFrame(animateConfetti);
-        else cancelAnimationFrame(animationId);
     }
 
     /* ==============================
-       게임 로직
+       3. 게임 데이터 및 로직
        ============================== */
     const suits = ['♠', '♥', '♦', '♣'];
     const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    let deck=[], discardPile=[], players=[], currentPlayerIndex=0, turnDirection=1;
+    let isGameRunning=true, isProcessingTurn=false, drawStack=0, currentEffectiveSuit=null;
+    let oneCardTimer=null;
 
-    let deck = [];
-    let discardPile = [];
-    let players = [
-        { id: 0, name: "YOU", isCpu: false, hand: [] },
-        { id: 1, name: "CPU 1", isCpu: true, hand: [] },
-        { id: 2, name: "CPU 2", isCpu: true, hand: [] },
-        { id: 3, name: "CPU 3", isCpu: true, hand: [] }
-    ];
-
-    let currentPlayerIndex = 0;
-    let turnDirection = 1;
-    let isGameRunning = true;
-    let oneCardTimer = null;
-    let isProcessingTurn = false;
-    let currentEffectiveSuit = null;
-    let drawStack = 0;
-
-    const discardEl = document.getElementById('discard-pile');
-    const playerHandEl = document.getElementById('player-hand');
-    const oneCardBtn = document.getElementById('one-card-btn');
-    const logEl = document.getElementById('game-log');
-    const suitIndicator = document.getElementById('current-suit-indicator');
-    const suitModal = document.getElementById('suit-modal');
-    const restartBtn = document.getElementById('restart-btn');
-    const badgeEl = document.getElementById('draw-penalty-badge');
-    const cpuVisuals = [null, document.querySelector('#cpu1 .cpu-hand-visual'), document.querySelector('#cpu2 .cpu-hand-visual'), document.querySelector('#cpu3 .cpu-hand-visual')];
+    // DOM 요소
+    const el = {
+        discard: document.getElementById('discard-pile'),
+        hand: document.getElementById('player-hand'),
+        log: document.getElementById('game-log'),
+        badge: document.getElementById('draw-penalty-badge'),
+        suitInd: document.getElementById('current-suit-indicator'),
+        suitModal: document.getElementById('suit-modal'),
+        btnOneCard: document.getElementById('one-card-btn'),
+        btnRestart: document.getElementById('restart-btn'),
+        cpuVisuals: [null,
+            document.querySelector('#cpu1 .cpu-hand-visual'),
+            document.querySelector('#cpu2 .cpu-hand-visual'),
+            document.querySelector('#cpu3 .cpu-hand-visual')]
+    };
 
     function initGame() {
-        createDeck();
-        shuffleDeck();
-        dealCards();
-        updateUI();
-        log("게임 시작! 행운을 빕니다.");
+        players = [
+            { id:0, name:"YOU", isCpu:false, hand:[] },
+            { id:1, name:"CPU1", isCpu:true, hand:[] },
+            { id:2, name:"CPU2", isCpu:true, hand:[] },
+            { id:3, name:"CPU3", isCpu:true, hand:[] }
+        ];
+        createDeck(); shuffleDeck(); dealCards(); updateUI();
+        log("내 차례에 카드를 내거나 덱을 눌러 뽑으세요.");
         highlightCurrentPlayer();
     }
 
     function createDeck() {
         deck = [];
-        for (let suit of suits) {
-            for (let rank of ranks) {
-                deck.push({ suit, rank, isJoker: false });
-            }
-        }
-        deck.push({ suit: 'Joker', rank: 'Black', isJoker: true });
-        deck.push({ suit: 'Joker', rank: 'Color', isJoker: true });
+        suits.forEach(s => ranks.forEach(r => deck.push({suit:s, rank:r, isJoker:false})));
+        deck.push({suit:'Joker', rank:'Black', isJoker:true});
+        deck.push({suit:'Joker', rank:'Color', isJoker:true});
     }
 
     function shuffleDeck() {
-        for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
+        for(let i=deck.length-1; i>0; i--) {
+            const j=Math.floor(Math.random()*(i+1));
             [deck[i], deck[j]] = [deck[j], deck[i]];
         }
     }
 
     function dealCards() {
-        for (let i = 0; i < 5; i++) {
-            players.forEach(p => { if(deck.length > 0) p.hand.push(deck.pop()); });
-        }
-        let firstCard = deck.pop();
-        discardPile.push(firstCard);
-
-        if (firstCard.isJoker) {
-            currentEffectiveSuit = 'ANY';
-            log("첫 카드가 조커! 아무거나 낼 수 있습니다.");
-        } else {
-            currentEffectiveSuit = firstCard.suit;
-        }
+        for(let i=0; i<5; i++) players.forEach(p => { if(deck.length) p.hand.push(deck.pop()); });
+        const first = deck.pop();
+        discardPile.push(first);
+        currentEffectiveSuit = first.isJoker ? 'ANY' : first.suit;
     }
 
-    function drawCardFromDeck(player) {
-        if (deck.length === 0) reshuffleDiscardPile();
-
-        let count = (drawStack > 0) ? drawStack : 1;
-
+    function drawCard(player) {
+        if(!deck.length) reshuffle();
+        let count = drawStack > 0 ? drawStack : 1;
         for(let i=0; i<count; i++) {
-            if (deck.length > 0) {
-                player.hand.push(deck.pop());
-                if(deck.length === 0) reshuffleDiscardPile();
-            }
+            if(deck.length) player.hand.push(deck.pop());
+            if(!deck.length) reshuffle();
         }
-
         playSound('draw');
-        if(drawStack > 0) {
-            log(`${player.name}, 공격받아 ${drawStack}장 가져갑니다!`);
-            drawStack = 0;
+        if(drawStack>0) {
+            log(`${player.name}, ${drawStack}장 먹음!`);
+            drawStack=0;
         }
         updateUI();
     }
 
-    function reshuffleDiscardPile() {
-        if (discardPile.length <= 1) return;
-        const topCard = discardPile.pop();
-        const newDeck = discardPile;
-        discardPile = [topCard];
-        deck = newDeck;
+    function reshuffle() {
+        if(discardPile.length<=1) return;
+        const top = discardPile.pop();
+        deck = discardPile;
+        discardPile = [top];
         shuffleDeck();
-        log("덱 리필됨");
+        log("덱 셔플");
     }
 
-    function isAttackCard(card) {
-        return card.isJoker || card.rank === '2' || card.rank === 'A';
-    }
-
-    function getAttackValue(card) {
-        if (card.isJoker && card.rank === 'Color') return 7;
-        if (card.isJoker && card.rank === 'Black') return 5;
-        if (card.rank === 'A') return 3;
-        if (card.rank === '2') return 2;
+    // --- 검증 및 처리 ---
+    function isAttack(c) { return c.isJoker || c.rank==='2' || c.rank==='A'; }
+    function getAttackVal(c) {
+        if(c.isJoker) return c.rank==='Color'?7:5;
+        if(c.rank==='A') return 3;
+        if(c.rank==='2') return 2;
         return 0;
     }
 
-    function isValidMove(card, topCard) {
-        if (drawStack > 0) {
-            if (card.isJoker) return true;
-            if (isAttackCard(card)) {
-                return (card.rank === topCard.rank || card.suit === currentEffectiveSuit || currentEffectiveSuit === 'ANY');
-            }
+    function isValid(c, top) {
+        if(drawStack > 0) {
+            if(c.isJoker) return true;
+            if(isAttack(c)) return (c.rank===top.rank || c.suit===currentEffectiveSuit || currentEffectiveSuit==='ANY');
             return false;
         }
-
-        if (card.isJoker) return true;
-        if (topCard.isJoker || currentEffectiveSuit === 'ANY') return true;
-        return card.rank === topCard.rank || card.suit === currentEffectiveSuit;
+        if(c.isJoker || top.isJoker || currentEffectiveSuit==='ANY') return true;
+        return c.rank===top.rank || c.suit===currentEffectiveSuit;
     }
 
-    function checkOneCardEvent(playerIndex, callback) {
-        const player = players[playerIndex];
-        if (player.hand.length === 1) {
-            spawnOneCardButton(playerIndex, callback);
-        } else {
-            callback();
-        }
-    }
-
-    function spawnOneCardButton(targetPlayerIndex, callback) {
-        playSound('alert');
-        const size = 100;
-        const maxX = window.innerWidth - size - 20;
-        const maxY = window.innerHeight - size - 20;
-
-        oneCardBtn.style.left = Math.max(10, Math.random() * maxX) + 'px';
-        oneCardBtn.style.top = Math.max(10, Math.random() * maxY) + 'px';
-        oneCardBtn.style.display = 'block';
-
-        let clicked = false;
-
-        oneCardBtn.onclick = () => {
-            clicked = true;
-            oneCardBtn.style.display = 'none';
-            clearTimeout(oneCardTimer);
-
-            if (targetPlayerIndex === 0) {
-                log("나: 방어 성공!");
-            } else {
-                log(`${players[targetPlayerIndex].name} 견제 성공! (+1장)`);
-                const tempStack = drawStack;
-                drawStack = 0;
-                drawCardFromDeck(players[targetPlayerIndex]);
-                drawStack = tempStack;
-                updateUI();
-            }
-            callback();
-        };
-
-        oneCardTimer = setTimeout(() => {
-            oneCardBtn.onclick = null;
-            if (!clicked) {
-                oneCardBtn.style.display = 'none';
-                if (targetPlayerIndex === 0) {
-                    log("방어 실패... (+1장)");
-                    const tempStack = drawStack;
-                    drawStack = 0;
-                    drawCardFromDeck(players[0]);
-                    drawStack = tempStack;
-                } else {
-                    log(`${players[targetPlayerIndex].name}: "원카드!"`);
-                }
-                updateUI();
-                callback();
-            }
-        }, 1000);
-    }
-
-    function processCardEffect(card, playerIndex) {
-        const player = players[playerIndex];
-
-        if (isAttackCard(card)) {
-            const damage = getAttackValue(card);
-            drawStack += damage;
-            log(`공격 누적! +${damage} (총 ${drawStack}장)`);
-            playSound('attack');
-        }
-
-        if (card.rank === 'K') {
-            log(`${player.name}: King! 한 번 더!`);
-            playSound('special');
-            return "REPEAT";
-        }
-
-        if (card.rank === 'Q') {
-            log(`${player.name}: Queen! 순서 반전!`);
-            playSound('special');
-            turnDirection *= -1;
-        }
-
-        if (card.rank === 'J') {
-            log(`${player.name}: Jump! 다음 사람 건너뛰기`);
-            playSound('special');
-            currentPlayerIndex = (currentPlayerIndex + turnDirection + 4) % 4;
-        }
-
-        if (card.rank === '7') {
-            playSound('special');
-            if (player.isCpu) {
-                const counts = {'♠':0, '♥':0, '♦':0, '♣':0};
-                player.hand.forEach(c => { if(!c.isJoker) counts[c.suit]++; });
-                const bestSuit = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
-                currentEffectiveSuit = bestSuit;
-                log(`${player.name}가 무늬를 ${bestSuit}(으)로 변경!`);
-                return "NEXT";
-            } else {
-                openSuitModal();
-                return "WAIT_UI";
-            }
-        }
-        return "NEXT";
-    }
-
-    function resolveSuitSelection(selectedSuit) {
-        suitModal.style.display = 'none';
-        currentEffectiveSuit = selectedSuit;
-        log(`무늬를 ${selectedSuit}(으)로 변경했습니다.`);
-        updateUI();
-        nextTurn();
-    }
-
-    function openSuitModal() {
-        suitModal.style.display = 'flex';
-    }
-
-    function nextTurn() {
-        if (!isGameRunning) return;
-
-        if (checkWinCondition(currentPlayerIndex)) return;
-
-        currentPlayerIndex = (currentPlayerIndex + turnDirection + 4) % 4;
-
-        updateUI();
-        highlightCurrentPlayer();
-
-        if (players[currentPlayerIndex].isCpu) {
-            isProcessingTurn = true;
-            setTimeout(cpuPlay, 1000);
-        } else {
-            isProcessingTurn = false;
-            if (drawStack > 0) {
-                log(`당신의 차례! 방어하거나 ${drawStack}장을 드로우하세요.`);
-            } else {
-                log("당신의 차례입니다.");
-            }
-        }
-    }
-
-    function checkWinCondition(playerIndex) {
-        if (players[playerIndex].hand.length === 0) {
-            isGameRunning = false;
-            const pName = players[playerIndex].name;
-            restartBtn.style.display = 'block';
-
-            if (playerIndex === 0) {
-                playFanfare();
-                createConfetti();
-                log(`🎉 축하합니다! ${pName} 승리!`);
-            } else {
-                log(`${pName} 승리... 다음 기회에!`);
-            }
+    function checkWin(pid) {
+        if(players[pid].hand.length===0) {
+            isGameRunning=false;
+            el.btnRestart.style.display='block';
+            if(pid===0) { playFanfare(); alert("승리했습니다!"); }
+            else { alert(players[pid].name + " 승리!"); }
             return true;
         }
         return false;
     }
 
-    function playerPlayCard(cardIndex) {
-        if (currentPlayerIndex !== 0 || isProcessingTurn) return;
+    function nextTurn() {
+        if(!isGameRunning) return;
+        if(checkWin(currentPlayerIndex)) return;
+        currentPlayerIndex = (currentPlayerIndex + turnDirection + 4) % 4;
+        updateUI(); highlightCurrentPlayer();
 
-        const card = players[0].hand[cardIndex];
-        const topCard = discardPile[discardPile.length - 1];
-
-        if (isValidMove(card, topCard)) {
-            isProcessingTurn = true;
-
-            players[0].hand.splice(cardIndex, 1);
-            discardPile.push(card);
-
-            if (card.isJoker) {
-                currentEffectiveSuit = 'ANY';
-            } else if (card.rank !== '7') {
-                currentEffectiveSuit = card.suit;
-            }
-
-            if(!isAttackCard(card) && card.rank !== 'K' && card.rank !== 'Q' && card.rank !== 'J' && card.rank !== '7') {
-                playSound('play');
-            }
-
-            updateUI();
-
-            if (players[0].hand.length === 0) {
-                checkWinCondition(0);
-                return;
-            }
-
-            checkOneCardEvent(0, () => {
-                const effectResult = processCardEffect(card, 0);
-
-                if (effectResult === "WAIT_UI") {
-                } else if (effectResult === "REPEAT") {
-                    isProcessingTurn = false;
-                    log("한 번 더 내세요!");
-                    updateUI();
-                } else {
-                    nextTurn();
-                }
-            });
-
+        if(players[currentPlayerIndex].isCpu) {
+            isProcessingTurn=true; setTimeout(cpuTurn, 800);
         } else {
-            log("낼 수 없는 카드입니다.");
+            isProcessingTurn=false;
+            log(drawStack>0 ? `방어하거나 ${drawStack}장 드로우!` : "당신의 차례");
         }
     }
 
-    function playerDraw() {
-        if (currentPlayerIndex !== 0 || isProcessingTurn) return;
-        drawCardFromDeck(players[0]);
-        updateUI();
-        nextTurn();
-    }
+    // --- 플레이어 액션 ---
+    window.playerDraw = function() { // 전역 노출
+        if(currentPlayerIndex!==0 || isProcessingTurn) return;
+        drawCard(players[0]);
+        updateUI(); nextTurn();
+    };
 
-    function cpuPlay() {
-        if (!isGameRunning) return;
+    function playerPlay(idx) {
+        if(currentPlayerIndex!==0 || isProcessingTurn) return;
+        const card = players[0].hand[idx];
+        const top = discardPile[discardPile.length-1];
 
-        const cpu = players[currentPlayerIndex];
-        const topCard = discardPile[discardPile.length - 1];
-
-        let validIndex = -1;
-
-        validIndex = cpu.hand.findIndex(c => isValidMove(c, topCard));
-
-        if (validIndex !== -1) {
-            const card = cpu.hand.splice(validIndex, 1)[0];
+        if(isValid(card, top)) {
+            isProcessingTurn=true;
+            players[0].hand.splice(idx, 1);
             discardPile.push(card);
 
-            if (card.isJoker) {
-                currentEffectiveSuit = 'ANY';
-            } else if (card.rank !== '7') {
-                currentEffectiveSuit = card.suit;
-            }
+            if(card.isJoker) currentEffectiveSuit='ANY';
+            else if(card.rank!=='7') currentEffectiveSuit=card.suit;
 
-            if(!isAttackCard(card) && card.rank !== 'K' && card.rank !== 'Q' && card.rank !== 'J' && card.rank !== '7') {
-                playSound('play');
-            }
+            if(!isAttack(card) && !['K','Q','J','7'].includes(card.rank)) playSound('play');
 
             updateUI();
+            if(checkWin(0)) return;
 
-            let cardName = card.isJoker ? `JOKER` : `${card.suit}${card.rank}`;
-            log(`${cpu.name} > ${cardName}`);
-
-            if (cpu.hand.length === 0) {
-                checkWinCondition(currentPlayerIndex);
-                return;
-            }
-
-            checkOneCardEvent(currentPlayerIndex, () => {
-                const effectResult = processCardEffect(card, currentPlayerIndex);
-
-                if (effectResult === "REPEAT") {
-                    setTimeout(cpuPlay, 1000);
-                } else {
-                    nextTurn();
-                }
+            checkOneCard(0, () => {
+                const res = processEffect(card, 0);
+                if(res!=='WAIT_UI' && res!=='REPEAT') nextTurn();
+                else if(res==='REPEAT') { isProcessingTurn=false; log("한 번 더!"); updateUI(); }
             });
-
         } else {
-            drawCardFromDeck(cpu);
+            log("낼 수 없습니다.");
+        }
+    }
+
+    // --- CPU 로직 ---
+    function cpuTurn() {
+        if(!isGameRunning) return;
+        const cpu = players[currentPlayerIndex];
+        const top = discardPile[discardPile.length-1];
+        const idx = cpu.hand.findIndex(c => isValid(c, top));
+
+        if(idx !== -1) {
+            const card = cpu.hand.splice(idx, 1)[0];
+            discardPile.push(card);
+
+            if(card.isJoker) currentEffectiveSuit='ANY';
+            else if(card.rank!=='7') currentEffectiveSuit=card.suit;
+
+            if(!isAttack(card) && !['K','Q','J','7'].includes(card.rank)) playSound('play');
             updateUI();
+
+            if(checkWin(currentPlayerIndex)) return;
+
+            checkOneCard(currentPlayerIndex, () => {
+                const res = processEffect(card, currentPlayerIndex);
+                if(res==='REPEAT') setTimeout(cpuTurn, 800);
+                else nextTurn();
+            });
+        } else {
+            drawCard(cpu);
             nextTurn();
         }
     }
 
+    // --- 효과 처리 ---
+    function processEffect(c, pid) {
+        if(isAttack(c)) {
+            const dmg = getAttackVal(c);
+            drawStack += dmg;
+            log(`공격! +${dmg} (총 ${drawStack})`);
+            playSound('attack');
+        }
+        if(c.rank==='K') { playSound('special'); return 'REPEAT'; }
+        if(c.rank==='Q') { playSound('special'); turnDirection *= -1; }
+        if(c.rank==='J') { playSound('special'); currentPlayerIndex = (currentPlayerIndex+turnDirection+4)%4; }
+        if(c.rank==='7') {
+            playSound('special');
+            if(players[pid].isCpu) {
+                // 단순 AI: 제일 많은 무늬
+                const cnt = {'♠':0, '♥':0, '♦':0, '♣':0};
+                players[pid].hand.forEach(h=> {if(!h.isJoker) cnt[h.suit]++});
+                currentEffectiveSuit = Object.keys(cnt).reduce((a,b)=>cnt[a]>cnt[b]?a:b);
+                log(`${players[pid].name}: ${currentEffectiveSuit}로 변경`);
+                return 'NEXT';
+            } else {
+                el.suitModal.style.display='flex';
+                return 'WAIT_UI';
+            }
+        }
+        return 'NEXT';
+    }
+
+    window.resolveSuitSelection = function(s) {
+        el.suitModal.style.display='none';
+        currentEffectiveSuit=s;
+        log(`${s}로 변경됨`);
+        updateUI(); nextTurn();
+    };
+
+    // --- 원카드 버튼 ---
+    function checkOneCard(pid, cb) {
+        if(players[pid].hand.length===1) {
+            playSound('alert');
+            el.btnOneCard.style.display='block';
+            el.btnOneCard.style.left = Math.random()*(window.innerWidth-100)+'px';
+            el.btnOneCard.style.top = Math.random()*(window.innerHeight-100)+'px';
+
+            let clicked=false;
+            el.btnOneCard.onclick = () => {
+                clicked=true; el.btnOneCard.style.display='none'; clearTimeout(oneCardTimer);
+                if(pid===0) log("방어 성공!");
+                else {
+                    log("견제 성공! (+1)");
+                    let temp=drawStack; drawStack=0; drawCard(players[pid]); drawStack=temp;
+                }
+                cb();
+            };
+            oneCardTimer = setTimeout(()=>{
+                el.btnOneCard.onclick=null;
+                if(!clicked) {
+                    el.btnOneCard.style.display='none';
+                    if(pid===0) {
+                        log("원카드 실패 (+1)");
+                        let temp=drawStack; drawStack=0; drawCard(players[0]); drawStack=temp;
+                    }
+                    cb();
+                }
+            }, 1000);
+        } else cb();
+    }
+
+    // --- UI 업데이트 (핵심: 모바일 겹침 처리) ---
     function updateUI() {
-        const top = discardPile[discardPile.length - 1];
-        let displayText = top.isJoker ? (top.rank === 'Black' ? '🤡' : '👹') : `${top.suit}${top.rank}`;
+        // 중앙
+        const top = discardPile[discardPile.length-1];
+        let txt = top.isJoker ? `<span class="diagonal-text">JOKER</span>` : `${top.suit}${top.rank}`;
+        let cls = `card ${['♥','♦'].includes(top.suit)||top.rank==='Color'?'red':'black'}`;
+        if(top.isJoker) cls = top.rank==='Color'?'card joker-color':'card joker-black';
 
-        if (top.isJoker) {
-            displayText = `<span class="diagonal-text">JOKER</span>`;
+        el.discard.className = cls; el.discard.innerHTML = txt;
+
+        if(drawStack>0) { el.badge.style.display='flex'; el.badge.textContent=drawStack; }
+        else el.badge.style.display='none';
+
+        let sIcon = currentEffectiveSuit==='ANY' ?
+            `<span class="suit-icon any-suit">자유</span>` :
+            `<span class="suit-icon ${['♥','♦'].includes(currentEffectiveSuit)?'red-suit':'black-suit'}">${currentEffectiveSuit}</span>`;
+        el.suitInd.innerHTML = `현재: ${sIcon}`;
+
+        // 플레이어 손패 (겹침 로직 적용)
+        renderPlayerHand();
+
+        // CPU
+        for(let i=1; i<=3; i++) {
+            el.cpuVisuals[i].innerHTML='';
+            for(let k=0; k<players[i].hand.length; k++) {
+                const c = document.createElement('div');
+                c.className = 'card card-back cpu-card';
+                el.cpuVisuals[i].appendChild(c);
+            }
+        }
+    }
+
+    // ★ 모바일 레이아웃 고정의 핵심 함수 ★
+    function renderPlayerHand() {
+        el.hand.innerHTML = '';
+        const hand = players[0].hand;
+        const count = hand.length;
+
+        // 화면 너비와 카드 크기를 고려한 겹침 계산
+        const cardWidth = 60;
+        const containerWidth = el.hand.clientWidth;
+
+        // 기본 겹침: -5px.
+        // 카드가 많아서 (카드수 * 너비)가 컨테이너보다 크면 더 많이 겹치게 계산
+        let overlap = -5;
+        const totalNeeded = count * cardWidth;
+
+        if (count > 1 && totalNeeded > containerWidth) {
+            // (카드개수 * 너비) + ((카드개수-1) * 겹침) = 컨테이너너비
+            // 겹침 = (컨테이너너비 - (카드개수 * 너비)) / (카드개수 - 1)
+            overlap = (containerWidth - (count * cardWidth)) / (count - 1);
+            // 너무 꽉 끼지 않게 약간 여유(-5px 추가)
+            overlap -= 2;
         }
 
-        let cssClass = `card ${['♥','♦'].includes(top.suit) || top.rank === 'Color' ? 'red' : 'black'}`;
-        if (top.isJoker) {
-            cssClass = top.rank === 'Color' ? 'card joker-color' : 'card joker-black';
-        }
-
-        discardEl.className = cssClass;
-        discardEl.innerHTML = displayText;
-
-        // [수정된 부분] 배지 보여주기 로직
-        if (drawStack > 0) {
-            badgeEl.style.display = 'flex'; // JS에서 flex 적용
-            badgeEl.textContent = drawStack;
-        } else {
-            badgeEl.style.display = 'none'; // JS에서 숨김
-        }
-
-        if (currentEffectiveSuit === 'ANY') {
-            suitIndicator.innerHTML = `현재: <span class="suit-icon any-suit">자유 (아무거나)</span>`;
-        } else {
-            let suitColor = ['♥','♦'].includes(currentEffectiveSuit) ? 'red-suit' : 'black-suit';
-            suitIndicator.innerHTML = `현재 무늬: <span class="suit-icon ${suitColor}">${currentEffectiveSuit}</span>`;
-        }
-
-        playerHandEl.innerHTML = '';
-        players[0].hand.forEach((card, index) => {
+        hand.forEach((card, i) => {
             const d = document.createElement('div');
             let cClass = `card ${['♥','♦'].includes(card.suit) ? 'red' : 'black'}`;
             let cText = `${card.suit}${card.rank}`;
-
-            if (card.isJoker) {
-                cClass = card.rank === 'Color' ? 'card joker-color' : 'card joker-black';
+            if(card.isJoker) {
+                cClass = card.rank==='Color'?'card joker-color':'card joker-black';
                 cText = `<span class="diagonal-text">JOKER</span>`;
             }
 
             d.className = cClass;
             d.innerHTML = cText;
-            d.onclick = () => playerPlayCard(index);
-            playerHandEl.appendChild(d);
-        });
+            d.onclick = () => playerPlay(i);
 
-        for(let i=1; i<=3; i++) {
-            const visualContainer = cpuVisuals[i];
-            visualContainer.innerHTML = '';
-            const count = players[i].hand.length;
-            for(let k=0; k<count; k++) {
-                const cardBack = document.createElement('div');
-                cardBack.className = 'card card-back cpu-card';
-                visualContainer.appendChild(cardBack);
+            // 동적 마진 적용 (마지막 카드는 마진 없음)
+            if (i < count - 1) {
+                d.style.marginRight = `${overlap}px`;
             }
-        }
+            // Z-Index: 오른쪽 카드가 위로 오게 (선택 편의성)
+            d.style.zIndex = i;
+
+            el.hand.appendChild(d);
+        });
     }
 
     function highlightCurrentPlayer() {
-        document.querySelectorAll('.player-area').forEach(el => el.classList.remove('active-turn'));
-        const ids = ['player', 'cpu1', 'cpu2', 'cpu3'];
-        document.getElementById(ids[currentPlayerIndex]).classList.add('active-turn');
+        document.querySelectorAll('.player-area').forEach(e => e.classList.remove('active-turn'));
+        ['player','cpu1','cpu2','cpu3'].forEach((id, i) => {
+            if(i===currentPlayerIndex) document.getElementById(id).classList.add('active-turn');
+        });
     }
 
-    function log(msg) {
-        const p = document.createElement('div');
-        p.textContent = msg;
-        logEl.appendChild(p);
-        logEl.scrollTop = logEl.scrollHeight;
-    }
+    function log(msg) { el.log.textContent = msg; }
 
-    window.onload = initGame;
+    // 시작
+    initGame();
 </script>
 </body>
 </html>
