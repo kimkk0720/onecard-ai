@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>원카드 프로 (모바일 레이아웃 고정)</title>
+    <title>원카드 프로 (디자인 피드백 적용)</title>
     <style>
         /* 변수 선언 */
         :root {
@@ -16,11 +16,11 @@
             background-color: #2e7d32;
             color: white;
             margin: 0;
-            overflow: hidden; /* 스크롤 절대 방지 */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: 100dvh; /* 모바일 주소창 대응 */
+            height: 100dvh;
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
@@ -32,9 +32,8 @@
             height: 100%;
             position: relative;
             display: grid;
-            /* 행 높이 고정: 상단(20%) 중앙(나머지) 하단(140px 고정) */
             grid-template-rows: 20% 1fr 140px;
-            grid-template-columns: 80px 1fr 80px; /* 좌우 CPU 영역 고정 */
+            grid-template-columns: 80px 1fr 80px;
             padding: 5px;
             box-sizing: border-box;
         }
@@ -45,7 +44,7 @@
             align-items: center;
             flex-direction: column;
             position: relative;
-            overflow: visible; /* 카드가 살짝 튀어나와도 보이게 */
+            overflow: visible;
         }
 
         .active-turn {
@@ -54,13 +53,12 @@
             box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
         }
 
-        /* 그리드 영역 할당 */
-        #cpu2 { grid-area: 1 / 2 / 2 / 3; } /* 상단 */
-        #cpu1 { grid-area: 2 / 1 / 3 / 2; } /* 좌측 */
-        #cpu3 { grid-area: 2 / 3 / 3 / 4; } /* 우측 */
+        #cpu2 { grid-area: 1 / 2 / 2 / 3; }
+        #cpu1 { grid-area: 2 / 1 / 3 / 2; }
+        #cpu3 { grid-area: 2 / 3 / 3 / 4; }
         #player {
-            grid-area: 3 / 1 / 4 / 4; /* 하단 전체 사용 */
-            justify-content: flex-start; /* 위쪽 정렬 */
+            grid-area: 3 / 1 / 4 / 4;
+            justify-content: flex-start;
             padding-top: 10px;
         }
 
@@ -80,18 +78,17 @@
             position: relative;
         }
 
-        /* 플레이어 손패 영역 (가장 중요: 높이 고정) */
         #player-hand {
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 110px; /* 카드(90) + 호버공간(20) */
-            width: 95%;    /* 화면 꽉 차게 */
+            height: 110px;
+            width: 95%;
             margin-top: 5px;
             perspective: 1000px;
         }
 
-        /* 카드 스타일 */
+        /* === 카드 디자인 === */
         .card {
             width: var(--card-width);
             height: var(--card-height);
@@ -100,13 +97,39 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 22px;
-            font-weight: bold;
             box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
             cursor: pointer;
             position: relative;
-            transition: transform 0.2s, margin 0.2s; /* 부드러운 움직임 */
-            flex-shrink: 0; /* 공간 좁아도 카드 크기 줄어들지 않음 */
+            transition: transform 0.2s, margin 0.2s;
+            flex-shrink: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* 좌측 상단 인덱스 */
+        .card-corner {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            display: flex;
+            flex-direction: column; /* 세로 배치 */
+            align-items: center;
+            line-height: 1;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* 조커용 코너 텍스트 (작게) */
+        .joker-corner-text {
+            font-size: 9px;
+            line-height: 0.9;
+            margin-top: 1px;
+            font-weight: 800;
+        }
+
+        /* 카드 중앙 내용 */
+        .card-center {
+            font-size: 24px;
+            font-weight: bold;
         }
 
         .card.red { color: #d32f2f; }
@@ -121,10 +144,8 @@
             color: transparent;
         }
 
-        /* 내 카드는 호버 시 위로 올라옴 */
-        #player-hand .card:active { transform: translateY(-15px) scale(1.1); z-index: 100 !important; }
+        #player-hand .card:active { transform: translateY(-20px) scale(1.1); z-index: 1000 !important; }
 
-        /* 기타 UI 요소들 */
         #draw-penalty-badge {
             position: absolute; top: -15px; right: -15px;
             width: 35px; height: 35px;
@@ -137,7 +158,7 @@
         }
         @keyframes popBadge { 0% {transform:scale(0);} 100% {transform:scale(1);} }
 
-        .diagonal-text { transform: rotate(-45deg); font-size: 15px; font-weight: 900; }
+        .diagonal-text { transform: rotate(-45deg); font-size: 15px; font-weight: 900; display: block; }
 
         #current-suit-indicator {
             font-size: 16px; font-weight: bold;
@@ -156,30 +177,26 @@
             font-size: 12px; font-weight: bold;
         }
 
-        /* CPU 손패 */
         .cpu-hand-visual {
             display: flex; justify-content: center; align-items: center;
             height: 80px; width: 80px;
         }
         .cpu-card {
-            width: 30px; height: 45px; /* CPU 카드는 작게 */
+            width: 30px; height: 45px;
             border-radius: 3px; box-shadow: -1px 0 2px rgba(0,0,0,0.3);
             margin-left: -20px; transition: all 0.3s ease;
         }
         .cpu-card:first-child { margin-left: 0; }
 
-        /* CPU 좌우는 세로로 */
         #cpu1 .cpu-hand-visual, #cpu3 .cpu-hand-visual { flex-direction: column; height: 100%; }
         #cpu1 .cpu-card, #cpu3 .cpu-card {
             margin-left: 0; margin-top: -35px; transform: rotate(90deg);
         }
         #cpu1 .cpu-card:first-child, #cpu3 .cpu-card:first-child { margin-top: 0; }
 
-        /* 덱 클릭 */
         #deck { position: relative; overflow: visible; }
         #deck:active { transform: scale(0.95); }
 
-        /* 버튼 및 캔버스 */
         #confetti-canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10000; }
 
         #one-card-btn {
@@ -201,7 +218,7 @@
         }
 
         #game-log {
-            position: absolute; bottom: 150px; /* 핸드 바로 위 */
+            position: absolute; bottom: 150px;
             left: 50%; transform: translateX(-50%);
             width: 80%; height: 30px;
             background: rgba(0,0,0,0.7); color: #fff;
@@ -276,9 +293,6 @@
 <div id="game-log">게임 시작!</div>
 
 <script>
-    /* ==============================
-       1. 화면 높이 고정 (모바일 필수)
-       ============================== */
     function setScreenHeight() {
         let vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -287,9 +301,6 @@
     window.addEventListener('resize', setScreenHeight);
     setScreenHeight();
 
-    /* ==============================
-       2. 오디오 시스템
-       ============================== */
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -333,16 +344,12 @@
         });
     }
 
-    /* ==============================
-       3. 게임 데이터 및 로직
-       ============================== */
     const suits = ['♠', '♥', '♦', '♣'];
     const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     let deck=[], discardPile=[], players=[], currentPlayerIndex=0, turnDirection=1;
     let isGameRunning=true, isProcessingTurn=false, drawStack=0, currentEffectiveSuit=null;
     let oneCardTimer=null;
 
-    // DOM 요소
     const el = {
         discard: document.getElementById('discard-pile'),
         hand: document.getElementById('player-hand'),
@@ -415,7 +422,6 @@
         log("덱 셔플");
     }
 
-    // --- 검증 및 처리 ---
     function isAttack(c) { return c.isJoker || c.rank==='2' || c.rank==='A'; }
     function getAttackVal(c) {
         if(c.isJoker) return c.rank==='Color'?7:5;
@@ -459,8 +465,7 @@
         }
     }
 
-    // --- 플레이어 액션 ---
-    window.playerDraw = function() { // 전역 노출
+    window.playerDraw = function() {
         if(currentPlayerIndex!==0 || isProcessingTurn) return;
         drawCard(players[0]);
         updateUI(); nextTurn();
@@ -494,7 +499,6 @@
         }
     }
 
-    // --- CPU 로직 ---
     function cpuTurn() {
         if(!isGameRunning) return;
         const cpu = players[currentPlayerIndex];
@@ -524,7 +528,6 @@
         }
     }
 
-    // --- 효과 처리 ---
     function processEffect(c, pid) {
         if(isAttack(c)) {
             const dmg = getAttackVal(c);
@@ -538,7 +541,6 @@
         if(c.rank==='7') {
             playSound('special');
             if(players[pid].isCpu) {
-                // 단순 AI: 제일 많은 무늬
                 const cnt = {'♠':0, '♥':0, '♦':0, '♣':0};
                 players[pid].hand.forEach(h=> {if(!h.isJoker) cnt[h.suit]++});
                 currentEffectiveSuit = Object.keys(cnt).reduce((a,b)=>cnt[a]>cnt[b]?a:b);
@@ -559,7 +561,6 @@
         updateUI(); nextTurn();
     };
 
-    // --- 원카드 버튼 ---
     function checkOneCard(pid, cb) {
         if(players[pid].hand.length===1) {
             playSound('alert');
@@ -591,15 +592,40 @@
         } else cb();
     }
 
-    // --- UI 업데이트 (핵심: 모바일 겹침 처리) ---
+    // [수정] 카드 HTML 생성 로직
+    function createCardHTML(card) {
+        if (card.isJoker) {
+            // 조커: 좌측 상단에 세로로 JOKER 표시
+            return `
+                <div class="card-corner">
+                    <div class="joker-corner-text">J</div>
+                    <div class="joker-corner-text">O</div>
+                    <div class="joker-corner-text">K</div>
+                    <div class="joker-corner-text">E</div>
+                    <div class="joker-corner-text">R</div>
+                </div>
+                <span class="diagonal-text">JOKER</span>
+            `;
+        }
+        // 일반: 좌측 상단 문양 -> 숫자 순서
+        return `
+            <div class="card-corner">
+                <div>${card.rank}</div>
+                <div>${card.suit}</div>
+            </div>
+            <div class="card-center">
+                ${card.suit}${card.rank}
+            </div>
+        `;
+    }
+
     function updateUI() {
-        // 중앙
         const top = discardPile[discardPile.length-1];
-        let txt = top.isJoker ? `<span class="diagonal-text">JOKER</span>` : `${top.suit}${top.rank}`;
         let cls = `card ${['♥','♦'].includes(top.suit)||top.rank==='Color'?'red':'black'}`;
         if(top.isJoker) cls = top.rank==='Color'?'card joker-color':'card joker-black';
 
-        el.discard.className = cls; el.discard.innerHTML = txt;
+        el.discard.className = cls;
+        el.discard.innerHTML = createCardHTML(top);
 
         if(drawStack>0) { el.badge.style.display='flex'; el.badge.textContent=drawStack; }
         else el.badge.style.display='none';
@@ -609,10 +635,8 @@
             `<span class="suit-icon ${['♥','♦'].includes(currentEffectiveSuit)?'red-suit':'black-suit'}">${currentEffectiveSuit}</span>`;
         el.suitInd.innerHTML = `현재: ${sIcon}`;
 
-        // 플레이어 손패 (겹침 로직 적용)
         renderPlayerHand();
 
-        // CPU
         for(let i=1; i<=3; i++) {
             el.cpuVisuals[i].innerHTML='';
             for(let k=0; k<players[i].hand.length; k++) {
@@ -623,47 +647,34 @@
         }
     }
 
-    // ★ 모바일 레이아웃 고정의 핵심 함수 ★
     function renderPlayerHand() {
         el.hand.innerHTML = '';
         const hand = players[0].hand;
         const count = hand.length;
 
-        // 화면 너비와 카드 크기를 고려한 겹침 계산
         const cardWidth = 60;
         const containerWidth = el.hand.clientWidth;
 
-        // 기본 겹침: -5px.
-        // 카드가 많아서 (카드수 * 너비)가 컨테이너보다 크면 더 많이 겹치게 계산
         let overlap = -5;
         const totalNeeded = count * cardWidth;
 
         if (count > 1 && totalNeeded > containerWidth) {
-            // (카드개수 * 너비) + ((카드개수-1) * 겹침) = 컨테이너너비
-            // 겹침 = (컨테이너너비 - (카드개수 * 너비)) / (카드개수 - 1)
             overlap = (containerWidth - (count * cardWidth)) / (count - 1);
-            // 너무 꽉 끼지 않게 약간 여유(-5px 추가)
             overlap -= 2;
         }
 
         hand.forEach((card, i) => {
             const d = document.createElement('div');
             let cClass = `card ${['♥','♦'].includes(card.suit) ? 'red' : 'black'}`;
-            let cText = `${card.suit}${card.rank}`;
-            if(card.isJoker) {
-                cClass = card.rank==='Color'?'card joker-color':'card joker-black';
-                cText = `<span class="diagonal-text">JOKER</span>`;
-            }
+            if(card.isJoker) cClass = card.rank==='Color'?'card joker-color':'card joker-black';
 
             d.className = cClass;
-            d.innerHTML = cText;
+            d.innerHTML = createCardHTML(card);
             d.onclick = () => playerPlay(i);
 
-            // 동적 마진 적용 (마지막 카드는 마진 없음)
             if (i < count - 1) {
                 d.style.marginRight = `${overlap}px`;
             }
-            // Z-Index: 오른쪽 카드가 위로 오게 (선택 편의성)
             d.style.zIndex = i;
 
             el.hand.appendChild(d);
@@ -679,7 +690,6 @@
 
     function log(msg) { el.log.textContent = msg; }
 
-    // 시작
     initGame();
 </script>
 </body>
