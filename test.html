@@ -384,6 +384,7 @@
         deck.push({suit:'Joker', rank:'Color', isJoker:true});
     }
 
+    // 덱 셔플
     function shuffleDeck() {
         for(let i=deck.length-1; i>0; i--) {
             const j=Math.floor(Math.random()*(i+1));
@@ -391,6 +392,7 @@
         }
     }
 
+    // 초반 카드 나누기
     function dealCards() {
         for(let i=0; i<5; i++) players.forEach(p => { if(deck.length) p.hand.push(deck.pop()); });
         const first = deck.pop();
@@ -398,14 +400,19 @@
         currentEffectiveSuit = first.isJoker ? 'ANY' : first.suit;
     }
 
+    // 카드 뽑기
     function drawCard(player) {
         if(!deck.length) reshuffle();
         let count = drawStack > 0 ? drawStack : 1;
-        for(let i=0; i<count; i++) {
-            if(deck.length) player.hand.push(deck.pop());
-            if(!deck.length) reshuffle();
+        for (let i = 0; i < count; i++) {
+            if (deck.length) {
+                player.hand.push(deck.pop());
+                if (!deck.length) reshuffle();
+            }
+
+            playSound('draw');
         }
-        playSound('draw');
+
         if(drawStack>0) {
             log(`${player.name}, ${drawStack}장 먹음!`);
             drawStack=0;
@@ -413,6 +420,7 @@
         updateUI();
     }
 
+    // 덱 리필
     function reshuffle() {
         if(discardPile.length<=1) return;
         const top = discardPile.pop();
@@ -430,27 +438,46 @@
         return 0;
     }
 
+    // 낼 수 있는 여부
     function isValid(c, top) {
         if(drawStack > 0) {
+            // 조커는 언제나 방어 가능
             if(c.isJoker) return true;
-            if(isAttack(c)) return (c.rank===top.rank || c.suit===currentEffectiveSuit || currentEffectiveSuit==='ANY');
+
+            // 2 공격 방어: 2, 같은 무늬 A, 조커
+            if (top.rank === '2') {
+                return c.rank === '2' || (c.rank === 'A' && c.suit === currentEffectiveSuit);
+            }
+
+            // A 공격 방어: A, 조커
+            if (top.rank === 'A') {
+                return c.rank === 'A';
+            }
+
+            // 조커 공격 방어: 조커
+            if (top.isJoker) {
+                return false;
+            }
+
             return false;
         }
         if(c.isJoker || top.isJoker || currentEffectiveSuit==='ANY') return true;
         return c.rank===top.rank || c.suit===currentEffectiveSuit;
     }
 
+    // 승리조건 체크
     function checkWin(pid) {
         if(players[pid].hand.length===0) {
             isGameRunning=false;
             el.btnRestart.style.display='block';
-            if(pid===0) { playFanfare(); alert("승리했습니다!"); }
-            else { alert(players[pid].name + " 승리!"); }
+            if(pid===0) { playFanfare(); log(`🎉 축하합니다! 승리했습니다!`); }
+            else { log(players[pid].name + " 승리... 다음 기회에"); }
             return true;
         }
         return false;
     }
 
+    // 다음 턴
     function nextTurn() {
         if(!isGameRunning) return;
         if(checkWin(currentPlayerIndex)) return;
@@ -465,7 +492,7 @@
         }
     }
 
-    window.playerDraw = function() {
+    function playerDraw() {
         if(currentPlayerIndex!==0 || isProcessingTurn) return;
         drawCard(players[0]);
         updateUI(); nextTurn();
@@ -528,11 +555,12 @@
         }
     }
 
+    // 턴, 특수 효과
     function processEffect(c, pid) {
         if(isAttack(c)) {
             const dmg = getAttackVal(c);
             drawStack += dmg;
-            log(`공격! +${dmg} (총 ${drawStack})`);
+            log(`공격! +${dmg} (총 ${drawStack}장)`);
             playSound('attack');
         }
         if(c.rank==='K') { playSound('special'); return 'REPEAT'; }
@@ -554,7 +582,7 @@
         return 'NEXT';
     }
 
-    window.resolveSuitSelection = function(s) {
+    function resolveSuitSelection(s) {
         el.suitModal.style.display='none';
         currentEffectiveSuit=s;
         log(`${s}로 변경됨`);
@@ -573,7 +601,7 @@
                 clicked=true; el.btnOneCard.style.display='none'; clearTimeout(oneCardTimer);
                 if(pid===0) log("방어 성공!");
                 else {
-                    log("견제 성공! (+1)");
+                    log("견제 성공! (+1장)");
                     let temp=drawStack; drawStack=0; drawCard(players[pid]); drawStack=temp;
                 }
                 cb();
@@ -588,7 +616,7 @@
                     }
                     cb();
                 }
-            }, 1000);
+            }, 800);
         } else cb();
     }
 
@@ -635,8 +663,10 @@
             `<span class="suit-icon ${['♥','♦'].includes(currentEffectiveSuit)?'red-suit':'black-suit'}">${currentEffectiveSuit}</span>`;
         el.suitInd.innerHTML = `현재: ${sIcon}`;
 
+        // 내 패
         renderPlayerHand();
 
+        // CPU 패
         for(let i=1; i<=3; i++) {
             el.cpuVisuals[i].innerHTML='';
             for(let k=0; k<players[i].hand.length; k++) {

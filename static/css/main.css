@@ -1,0 +1,235 @@
+/* 변수 선언 */
+:root {
+    --card-width: 60px;
+    --card-height: 90px;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #2e7d32;
+    color: white;
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+#game-board {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: grid;
+    grid-template-rows: 20% 1fr 140px;
+    grid-template-columns: 80px 1fr 80px;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+.player-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    position: relative;
+    overflow: visible;
+}
+
+.active-turn {
+    background-color: rgba(255, 255, 0, 0.15);
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
+}
+
+#cpu2 { grid-area: 1 / 2 / 2 / 3; }
+#cpu1 { grid-area: 2 / 1 / 3 / 2; }
+#cpu3 { grid-area: 2 / 3 / 3 / 4; }
+#player {
+    grid-area: 3 / 1 / 4 / 4;
+    justify-content: flex-start;
+    padding-top: 10px;
+}
+
+#center-area {
+    grid-area: 2 / 2 / 3 / 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#cards-zone {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    position: relative;
+}
+
+#player-hand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 110px;
+    width: 95%;
+    margin-top: 5px;
+    perspective: 1000px;
+}
+
+/* === 카드 디자인 === */
+.card {
+    width: var(--card-width);
+    height: var(--card-height);
+    background-color: white;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s, margin 0.2s;
+    flex-shrink: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+/* 좌측 상단 인덱스 */
+.card-corner {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    display: flex;
+    flex-direction: column; /* 세로 배치 */
+    align-items: center;
+    line-height: 1;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* 조커용 코너 텍스트 (작게) */
+.joker-corner-text {
+    font-size: 9px;
+    line-height: 0.9;
+    margin-top: 1px;
+    font-weight: 800;
+}
+
+/* 카드 중앙 내용 */
+.card-center {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.card.red { color: #d32f2f; }
+.card.black { color: #212121; }
+.card.joker-black { color: black; border: 2px solid #555; }
+.card.joker-color { color: red; border: 2px solid #ff9800; }
+
+.card-back {
+    background-color: #1a237e;
+    background-image: repeating-linear-gradient(45deg, #1a237e 0, #1a237e 5px, #283593 5px, #283593 10px);
+    border: 2px solid #fff;
+    color: transparent;
+}
+
+#player-hand .card:active { transform: translateY(-20px) scale(1.1); z-index: 1000 !important; }
+
+#draw-penalty-badge {
+    position: absolute; top: -15px; right: -15px;
+    width: 35px; height: 35px;
+    background-color: #d32f2f; color: white;
+    border-radius: 50%; border: 3px solid white;
+    display: none; justify-content: center; align-items: center;
+    font-weight: 900; font-size: 18px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 100;
+    animation: popBadge 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popBadge { 0% {transform:scale(0);} 100% {transform:scale(1);} }
+
+.diagonal-text { transform: rotate(-45deg); font-size: 15px; font-weight: 900; display: block; }
+
+#current-suit-indicator {
+    font-size: 16px; font-weight: bold;
+    background: rgba(0,0,0,0.6); padding: 5px 15px;
+    border-radius: 20px; color: #fff; min-height: 27px;
+    display: flex; align-items: center; gap: 5px;
+}
+.suit-icon { font-size: 20px; }
+.red-suit { color: #ff5252; }
+.black-suit { color: #fff; }
+.any-suit { color: #ffeb3b; text-shadow: 0 0 5px orange; }
+
+.player-name {
+    background: rgba(0,0,0,0.5); padding: 2px 8px;
+    border-radius: 10px; margin-bottom: 5px;
+    font-size: 12px; font-weight: bold;
+}
+
+.cpu-hand-visual {
+    display: flex; justify-content: center; align-items: center;
+    height: 80px; width: 80px;
+}
+.cpu-card {
+    width: 30px; height: 45px;
+    border-radius: 3px; box-shadow: -1px 0 2px rgba(0,0,0,0.3);
+    margin-left: -20px; transition: all 0.3s ease;
+}
+.cpu-card:first-child { margin-left: 0; }
+
+#cpu1 .cpu-hand-visual, #cpu3 .cpu-hand-visual { flex-direction: column; height: 100%; }
+#cpu1 .cpu-card, #cpu3 .cpu-card {
+    margin-left: 0; margin-top: -35px; transform: rotate(90deg);
+}
+#cpu1 .cpu-card:first-child, #cpu3 .cpu-card:first-child { margin-top: 0; }
+
+#deck { position: relative; overflow: visible; }
+#deck:active { transform: scale(0.95); }
+
+#confetti-canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10000; }
+
+#one-card-btn {
+    position: absolute; width: 90px; height: 90px;
+    background: radial-gradient(circle, #ffeb3b 0%, #fbc02d 100%);
+    color: #d32f2f; font-size: 18px; font-weight: 900;
+    border: 4px solid #d32f2f; border-radius: 50%;
+    cursor: pointer; z-index: 9999; display: none;
+    box-shadow: 0 0 20px #ffeb3b; animation: pulse 0.5s infinite;
+    text-align: center; line-height: 82px;
+}
+@keyframes pulse { 0% {transform:scale(1);} 50% {transform:scale(1.1);} 100% {transform:scale(1);} }
+
+#restart-btn {
+    position: absolute; top: 10px; right: 10px;
+    padding: 8px 15px; background-color: #0288d1;
+    color: white; border: none; border-radius: 5px;
+    font-size: 14px; font-weight: bold; z-index: 10001; display: none;
+}
+
+#game-log {
+    position: absolute; bottom: 150px;
+    left: 50%; transform: translateX(-50%);
+    width: 80%; height: 30px;
+    background: rgba(0,0,0,0.7); color: #fff;
+    border-radius: 15px; pointer-events: none;
+    z-index: 50;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 13px; padding: 0 10px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+#suit-modal {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: none;
+    justify-content: center; align-items: center; flex-direction: column;
+    z-index: 20000;
+}
+.suit-options { display: flex; gap: 15px; margin-top: 20px; }
+.suit-btn {
+    width: 60px; height: 60px; font-size: 30px;
+    background: white; border: none; border-radius: 10px;
+}
